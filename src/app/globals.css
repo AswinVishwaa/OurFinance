@@ -10,3 +10,20 @@ body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-start-rgb));
 }
+
+/* Fix for gradient text on mobile browsers */
+.bg-clip-text {
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+/* Fix for text-transparent on mobile */
+.text-transparent {
+  -webkit-text-fill-color: transparent;
+}
+
+/* Ensure gradients render properly on mobile */
+[class*="bg-gradient"] {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
