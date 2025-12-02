@@ -4,6 +4,16 @@ import { Asset } from "@/lib/types";
 import { format } from "date-fns";
 import { Sparkles } from "lucide-react";
 
+// Inline styles for mobile browser compatibility
+const goldGradientBg = "linear-gradient(to bottom right, rgba(120, 53, 15, 0.3), rgba(113, 63, 18, 0.2), rgba(146, 64, 14, 0.3))";
+const silverGradientBg = "linear-gradient(to bottom right, rgba(39, 39, 42, 0.5), rgba(30, 41, 59, 0.3), rgba(63, 63, 70, 0.5))";
+const goldIconBg = "linear-gradient(to bottom right, #f59e0b, #ca8a04)";
+const silverIconBg = "linear-gradient(to bottom right, #94a3b8, #71717a)";
+const goldTextGradient = "linear-gradient(to right, #fcd34d, #facc15)";
+const silverTextGradient = "linear-gradient(to right, #e2e8f0, #d4d4d8)";
+const goldShineBg = "linear-gradient(to bottom right, #fbbf24, #eab308)";
+const silverShineBg = "linear-gradient(to bottom right, #cbd5e1, #a1a1aa)";
+
 export function AssetList({ assets }: { assets: Asset[] }) {
     if (assets.length === 0) {
         return <div className="text-center text-zinc-500 py-8">No assets found</div>;
@@ -14,31 +24,40 @@ export function AssetList({ assets }: { assets: Asset[] }) {
             {assets.map((asset) => (
                 <div
                     key={asset.id}
+                    style={{ background: asset.metal_type === "Gold" ? goldGradientBg : silverGradientBg }}
                     className={`relative overflow-hidden rounded-2xl p-6 border shadow-xl transition-all duration-300 hover:scale-[1.02] ${asset.metal_type === "Gold"
-                            ? "bg-gradient-to-br from-amber-900/30 via-yellow-900/20 to-amber-800/30 border-amber-700/30 hover:border-amber-600/50"
-                            : "bg-gradient-to-br from-zinc-800/50 via-slate-800/30 to-zinc-700/50 border-zinc-600/30 hover:border-zinc-500/50"
+                            ? "border-amber-700/30 hover:border-amber-600/50"
+                            : "border-zinc-600/30 hover:border-zinc-500/50"
                         }`}
                 >
                     {/* Metallic shine effect */}
-                    <div className={`absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-20 ${asset.metal_type === "Gold"
-                            ? "bg-gradient-to-br from-amber-400 to-yellow-500"
-                            : "bg-gradient-to-br from-slate-300 to-zinc-400"
-                        }`}></div>
+                    <div 
+                        style={{ background: asset.metal_type === "Gold" ? goldShineBg : silverShineBg }}
+                        className="absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-20"
+                    ></div>
 
                     <div className="relative">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${asset.metal_type === "Gold"
-                                        ? "bg-gradient-to-br from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/30"
-                                        : "bg-gradient-to-br from-slate-400 to-zinc-500 shadow-lg shadow-zinc-500/30"
-                                    }`}>
+                                <div 
+                                    style={{ background: asset.metal_type === "Gold" ? goldIconBg : silverIconBg }}
+                                    className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${asset.metal_type === "Gold"
+                                            ? "shadow-amber-500/30"
+                                            : "shadow-zinc-500/30"
+                                        }`}
+                                >
                                     <Sparkles className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <div className={`text-xl font-bold ${asset.metal_type === "Gold"
-                                            ? "bg-gradient-to-r from-amber-300 to-yellow-400 bg-clip-text text-transparent"
-                                            : "bg-gradient-to-r from-slate-200 to-zinc-300 bg-clip-text text-transparent"
-                                        }`}>
+                                    <div 
+                                        style={{ 
+                                            background: asset.metal_type === "Gold" ? goldTextGradient : silverTextGradient,
+                                            WebkitBackgroundClip: "text",
+                                            WebkitTextFillColor: "transparent",
+                                            backgroundClip: "text"
+                                        }}
+                                        className="text-xl font-bold"
+                                    >
                                         {asset.metal_type}
                                     </div>
                                     <div className="text-xs text-zinc-400">

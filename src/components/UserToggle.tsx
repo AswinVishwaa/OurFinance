@@ -32,6 +32,7 @@ export function UserToggle({ userAName, userBName }: UserToggleProps) {
                 label: userAName,
                 gradient: "from-red-500 to-pink-500",
                 shadow: "shadow-red-500/30",
+                bgStyle: "linear-gradient(to right, #ef4444, #ec4899)",
                 icon: "👤",
             };
         } else if (viewMode === "B") {
@@ -39,6 +40,7 @@ export function UserToggle({ userAName, userBName }: UserToggleProps) {
                 label: userBName,
                 gradient: "from-purple-500 to-indigo-500",
                 shadow: "shadow-purple-500/30",
+                bgStyle: "linear-gradient(to right, #a855f7, #6366f1)",
                 icon: "👤",
             };
         } else {
@@ -46,6 +48,7 @@ export function UserToggle({ userAName, userBName }: UserToggleProps) {
                 label: "Both",
                 gradient: "from-emerald-500 to-teal-500",
                 shadow: "shadow-emerald-500/30",
+                bgStyle: "linear-gradient(to right, #10b981, #14b8a6)",
                 icon: "👥",
             };
         }
@@ -56,7 +59,8 @@ export function UserToggle({ userAName, userBName }: UserToggleProps) {
     return (
         <button
             onClick={cycleViewMode}
-            className={`relative overflow-hidden bg-gradient-to-r ${info.gradient} rounded-full px-5 py-2.5 shadow-lg ${info.shadow} transition-all duration-300 hover:scale-105 active:scale-95 group`}
+            style={{ background: info.bgStyle }}
+            className={`relative overflow-hidden rounded-full px-5 py-2.5 shadow-lg ${info.shadow} transition-all duration-300 hover:scale-105 active:scale-95 group`}
         >
             {/* Sparkle animation */}
             {isAnimating && (
