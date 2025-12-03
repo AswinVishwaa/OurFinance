@@ -1,29 +1,72 @@
 @import "tailwindcss";
 
-:root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 0, 0, 0;
+@layer base {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+
+  body {
+    color: rgb(var(--foreground-rgb));
+    background: rgb(var(--background-start-rgb));
+  }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
-}
+@layer utilities {
+  /* Fix for gradient text on mobile browsers - CRITICAL for iOS/Android Chrome */
+  .bg-clip-text {
+    -webkit-background-clip: text !important;
+    -moz-background-clip: text !important;
+    background-clip: text !important;
+  }
 
-/* Fix for gradient text on mobile browsers */
-.bg-clip-text {
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-}
+  /* Fix for text-transparent on mobile */
+  .text-transparent {
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+  }
 
-/* Fix for text-transparent on mobile */
-.text-transparent {
-  -webkit-text-fill-color: transparent;
-}
+  /* Gold gradient text fallback */
+  .from-amber-300,
+  .from-amber-400,
+  .from-amber-500 {
+    --tw-gradient-from: #fcd34d;
+  }
 
-/* Ensure gradients render properly on mobile */
-[class*="bg-gradient"] {
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
+  .to-yellow-400,
+  .to-yellow-500,
+  .to-yellow-600 {
+    --tw-gradient-to: #facc15;
+  }
+
+  /* Silver gradient text fallback */
+  .from-slate-200,
+  .from-slate-300,
+  .from-slate-400 {
+    --tw-gradient-from: #cbd5e1;
+  }
+
+  .to-zinc-300,
+  .to-zinc-400,
+  .to-zinc-500 {
+    --tw-gradient-to: #a1a1aa;
+  }
+
+  /* User toggle gradients */
+  .from-red-500 { --tw-gradient-from: #ef4444; }
+  .to-pink-500 { --tw-gradient-to: #ec4899; }
+  .from-purple-500 { --tw-gradient-from: #a855f7; }
+  .to-indigo-500 { --tw-gradient-to: #6366f1; }
+  .from-emerald-500 { --tw-gradient-from: #10b981; }
+  .to-teal-500 { --tw-gradient-to: #14b8a6; }
+
+  /* Ensure gradients work on mobile */
+  .bg-gradient-to-r {
+    background-image: linear-gradient(to right, var(--tw-gradient-from), var(--tw-gradient-to)) !important;
+  }
+
+  .bg-gradient-to-br {
+    background-image: linear-gradient(to bottom right, var(--tw-gradient-from), var(--tw-gradient-to)) !important;
+  }
 }

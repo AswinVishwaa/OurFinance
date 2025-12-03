@@ -144,3 +144,37 @@ export async function updateRow(tabName: string, range: string, rowData: any[]) 
         updatedColumns: result.data.updatedColumns
     });
 }
+
+// Find row index by matching criteria (returns 1-based row number, accounting for header)
+export async function findRowIndex(
+    tabName: string,
+    matchFn: (row: Record<string, unknown>) => boolean
+): Promise<number | null> {
+    const sheets = await getSheetsClient();
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: tabName,
+    });
+
+    const rows = response.data.values;
+    if (!rows || rows.length <= 1) return null;
+
+    const headers = rows[0];
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const obj: Record<string, any> = {};
+        headers.forEach((header: string, colIndex: number) => {
+            obj[header] = row[colIndex];
+        });
+
+        if (matchFn(obj)) {
+            return i + 1; // Return 1-based row number (i+1 because sheets are 1-indexed)
+        }
+    }
+
+    return null;
+}

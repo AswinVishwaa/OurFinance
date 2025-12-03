@@ -8,6 +8,15 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "browserslist": [
+    "defaults",
+    "not IE 11",
+    "Chrome >= 60",
+    "Firefox >= 60",
+    "Safari >= 12",
+    "iOS >= 12",
+    "Android >= 5"
+  ],
   "dependencies": {
     "@types/uuid": "^10.0.0",
     "clsx": "^2.1.1",
