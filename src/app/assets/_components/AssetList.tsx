@@ -2,7 +2,7 @@
 
 import { Asset } from "@/lib/types";
 import { format } from "date-fns";
-import { Sparkles } from "lucide-react";
+import { Sparkles, User } from "lucide-react";
 
 // Inline styles for mobile browser compatibility
 const goldGradientBg = "linear-gradient(to bottom right, rgba(120, 53, 15, 0.3), rgba(113, 63, 18, 0.2), rgba(146, 64, 14, 0.3))";
@@ -14,10 +14,20 @@ const silverTextGradient = "linear-gradient(to right, #e2e8f0, #d4d4d8)";
 const goldShineBg = "linear-gradient(to bottom right, #fbbf24, #eab308)";
 const silverShineBg = "linear-gradient(to bottom right, #cbd5e1, #a1a1aa)";
 
-export function AssetList({ assets }: { assets: Asset[] }) {
+interface AssetListProps {
+    assets: Asset[];
+    userAName: string;
+    userBName: string;
+}
+
+export function AssetList({ assets, userAName, userBName }: AssetListProps) {
     if (assets.length === 0) {
         return <div className="text-center text-zinc-500 py-8">No assets found</div>;
     }
+
+    const getOwnerName = (userId: string) => {
+        return userId === "A" ? userAName : userBName;
+    };
 
     return (
         <div className="space-y-4">
@@ -60,8 +70,13 @@ export function AssetList({ assets }: { assets: Asset[] }) {
                                     >
                                         {asset.metal_type}
                                     </div>
-                                    <div className="text-xs text-zinc-400">
-                                        {format(new Date(asset.date), "MMM d, yyyy")}
+                                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                                        <span className="flex items-center gap-1">
+                                            <User className="w-3 h-3" />
+                                            {getOwnerName(asset.user_id)}
+                                        </span>
+                                        <span>•</span>
+                                        <span>Updated {format(new Date(asset.date), "MMM d, yyyy")}</span>
                                     </div>
                                 </div>
                             </div>

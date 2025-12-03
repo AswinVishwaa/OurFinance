@@ -26,7 +26,7 @@ export default async function AssetsPage() {
                         <h2 className="text-xl font-semibold text-white">Your Portfolio</h2>
                     </div>
 
-                    <AssetList assets={assets} />
+                    <AssetList assets={assets} userAName={userAName} userBName={userBName} />
                     <AddAssetForm userAName={userAName} userBName={userBName} />
                 </section>
             </div>
