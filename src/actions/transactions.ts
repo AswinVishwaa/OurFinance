@@ -28,6 +28,8 @@ export async function addTransaction(data: {
     user_id: UserID;
     description: string;
     date?: string;
+    is_debt?: boolean;
+    debt_id?: string;
 }) {
     const transaction: Transaction = {
         id: uuidv4(),
@@ -39,9 +41,11 @@ export async function addTransaction(data: {
         user_id: data.user_id,
         description: data.description,
         tax_amount: 0,
+        is_debt: data.is_debt || false,
+        debt_id: data.debt_id || "",
     };
 
-    // 1. Add Transaction Row - order: id, date, type, amount, category, account_id, to_account_id, user_id, description, tax_amount
+    // 1. Add Transaction Row - order: id, date, type, amount, category, account_id, to_account_id, user_id, description, tax_amount, is_debt, debt_id
     const row = [
         transaction.id,
         transaction.date,
@@ -53,6 +57,8 @@ export async function addTransaction(data: {
         transaction.user_id,
         transaction.description,
         transaction.tax_amount || "",
+        transaction.is_debt ? "TRUE" : "FALSE",
+        transaction.debt_id || "",
     ];
     await appendRow(SHEET_IDS.TRANSACTIONS, row);
 
@@ -76,6 +82,26 @@ export async function addTransaction(data: {
 
     revalidatePath("/");
     revalidatePath("/profile");
+    revalidatePath("/analytics");
+}
+
+// Repay debt - creates an expense transaction linked to original debt
+export async function repayDebt(data: {
+    original_debt_id: string;
+    amount: number;
+    account_id: string;
+    user_id: UserID;
+    description: string;
+}) {
+    await addTransaction({
+        type: "expense",
+        amount: data.amount,
+        category: "Debt Repayment",
+        account_id: data.account_id,
+        user_id: data.user_id,
+        description: data.description || "Debt repayment",
+        debt_id: data.original_debt_id,
+    });
 }
 
 export async function transferFunds(data: {

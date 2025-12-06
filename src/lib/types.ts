@@ -12,6 +12,8 @@ export interface Transaction {
     user_id: UserID;
     description: string;
     tax_amount?: number;
+    is_debt?: boolean; // For tracking borrowed money
+    debt_id?: string; // Links to the original debt transaction
 }
 
 export interface Account {
@@ -37,4 +39,16 @@ export interface Asset {
 export interface Setting {
     key: string;
     value: string;
+}
+
+// Debt tracking - calculated from transactions
+export interface DebtSummary {
+    id: string; // Original transaction ID
+    date: string;
+    description: string;
+    original_amount: number;
+    paid_amount: number;
+    remaining_amount: number;
+    user_id: UserID;
+    is_cleared: boolean;
 }

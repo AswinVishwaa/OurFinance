@@ -12,6 +12,8 @@ interface DashboardViewProps {
     accounts: Account[];
     assets: Asset[];
     transactions: Transaction[];
+    userAName: string;
+    userBName: string;
 }
 
 type TimePeriod = "today" | "week" | "month" | "quarter" | "year" | "all";
@@ -25,7 +27,7 @@ const TIME_PERIODS: { id: TimePeriod; label: string; short: string }[] = [
     { id: "all", label: "All Time", short: "All" },
 ];
 
-export function DashboardView({ accounts, assets, transactions }: DashboardViewProps) {
+export function DashboardView({ accounts, assets, transactions, userAName, userBName }: DashboardViewProps) {
     const { viewMode } = useUser();
     const [timePeriod, setTimePeriod] = useState<TimePeriod>("month");
     const [showPeriodMenu, setShowPeriodMenu] = useState(false);
@@ -101,6 +103,8 @@ export function DashboardView({ accounts, assets, transactions }: DashboardViewP
                 filteredTransactions={filteredTransactions}
                 viewMode={viewMode}
                 timePeriod={timePeriod}
+                userAName={userAName}
+                userBName={userBName}
             />
 
             <div className="space-y-4">
