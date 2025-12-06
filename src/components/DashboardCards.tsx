@@ -2,8 +2,9 @@
 
 import { Account, Asset, Transaction } from "@/lib/types";
 import { ViewMode } from "@/context/UserContext";
-import { useMemo } from "react";
-import { Wallet, TrendingUp, Flame, PieChart, TrendingDown } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Wallet, TrendingUp, Flame, PieChart, TrendingDown, Users } from "lucide-react";
+import { CategoryDetailModal } from "./CategoryDetailModal";
 
 interface DashboardCardsProps {
     accounts: Account[];
@@ -12,6 +13,8 @@ interface DashboardCardsProps {
     filteredTransactions: Transaction[];
     viewMode: ViewMode;
     timePeriod: string;
+    userAName: string;
+    userBName: string;
 }
 
 export function DashboardCards({
@@ -20,8 +23,12 @@ export function DashboardCards({
     allTransactions,
     filteredTransactions,
     viewMode,
-    timePeriod
+    timePeriod,
+    userAName,
+    userBName
 }: DashboardCardsProps) {
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
     const stats = useMemo(() => {
         const filteredAccounts = accounts.filter(
             (a) =>
@@ -54,21 +61,39 @@ export function DashboardCards({
         const savings = totalIncome - totalExpense;
         const savingsRate = totalIncome > 0 ? Math.round((savings / totalIncome) * 100) : 0;
 
-        const categoryTotals: Record<string, number> = {};
+        // Category breakdown with transactions
+        const categoryData: Record<string, { amount: number; transactions: Transaction[] }> = {};
         filteredTransactions
             .filter((t) => t.type === "expense")
             .forEach((t) => {
-                categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+                if (!categoryData[t.category]) {
+                    categoryData[t.category] = { amount: 0, transactions: [] };
+                }
+                categoryData[t.category].amount += t.amount;
+                categoryData[t.category].transactions.push(t);
             });
 
-        const topCategories = Object.entries(categoryTotals)
-            .sort(([, a], [, b]) => b - a)
+        const topCategories = Object.entries(categoryData)
+            .sort(([, a], [, b]) => b.amount - a.amount)
             .slice(0, 5)
-            .map(([category, amount]) => ({
+            .map(([category, data]) => ({
                 category,
-                amount,
-                percent: totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0,
+                amount: data.amount,
+                transactions: data.transactions,
+                percent: totalExpense > 0 ? Math.round((data.amount / totalExpense) * 100) : 0,
             }));
+
+        // Per-user spending breakdown
+        const userAExpense = filteredTransactions
+            .filter((t) => t.type === "expense" && t.user_id === "A")
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const userBExpense = filteredTransactions
+            .filter((t) => t.type === "expense" && t.user_id === "B")
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const userAPercent = totalExpense > 0 ? Math.round((userAExpense / totalExpense) * 100) : 0;
+        const userBPercent = totalExpense > 0 ? Math.round((userBExpense / totalExpense) * 100) : 0;
 
         return {
             netWorth,
@@ -81,6 +106,10 @@ export function DashboardCards({
             savings,
             savingsRate,
             topCategories,
+            userAExpense,
+            userBExpense,
+            userAPercent,
+            userBPercent,
         };
     }, [accounts, assets, filteredTransactions, viewMode]);
 
@@ -108,8 +137,33 @@ export function DashboardCards({
         return colors[index] || colors[0];
     };
 
+    const getCategoryColorStyle = (index: number) => {
+        const colors = [
+            "linear-gradient(to right, #ef4444, #ec4899)",
+            "linear-gradient(to right, #f97316, #f59e0b)",
+            "linear-gradient(to right, #eab308, #84cc16)",
+            "linear-gradient(to right, #22c55e, #10b981)",
+            "linear-gradient(to right, #3b82f6, #06b6d4)",
+        ];
+        return colors[index] || colors[0];
+    };
+
+    // Get selected category data
+    const selectedCategoryData = selectedCategory
+        ? stats.topCategories.find((c) => c.category === selectedCategory)
+        : null;
+
     return (
         <div className="space-y-6">
+            {/* Category Detail Modal */}
+            <CategoryDetailModal
+                isOpen={!!selectedCategory}
+                onClose={() => setSelectedCategory(null)}
+                category={selectedCategory || ""}
+                transactions={selectedCategoryData?.transactions || []}
+                totalAmount={selectedCategoryData?.amount || 0}
+            />
+
             {/* Hero Section - Net Worth & Summary */}
             <div className="grid md:grid-cols-2 gap-4">
                 {/* Net Worth - Hero Card */}
@@ -149,21 +203,90 @@ export function DashboardCards({
                 </div>
             </div>
 
-            {/* Top Spending Categories - Pie Chart */}
+            {/* User Spending Cards - Burn Rate */}
+            {viewMode === "Combined" && (
+                <div className="grid grid-cols-2 gap-4">
+                    {/* User A Spending */}
+                    <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-4 shadow-xl">
+                        <div 
+                            className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-30"
+                            style={{ background: "linear-gradient(to bottom right, #ef4444, #ec4899)" }}
+                        ></div>
+                        <div className="relative">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Flame className="w-4 h-4 text-red-400" />
+                                <span className="text-xs text-zinc-400 font-medium">{userAName}&apos;s Burn</span>
+                            </div>
+                            <div className="text-2xl font-bold text-white mb-1">
+                                ₹{stats.userAExpense.toLocaleString()}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 h-2 bg-zinc-700 rounded-full overflow-hidden">
+                                    <div 
+                                        className="h-full rounded-full transition-all duration-500"
+                                        style={{ 
+                                            width: `${stats.userAPercent}%`,
+                                            background: "linear-gradient(to right, #ef4444, #ec4899)"
+                                        }}
+                                    />
+                                </div>
+                                <span className="text-xs text-zinc-400">{stats.userAPercent}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* User B Spending */}
+                    <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-4 shadow-xl">
+                        <div 
+                            className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-30"
+                            style={{ background: "linear-gradient(to bottom right, #a855f7, #6366f1)" }}
+                        ></div>
+                        <div className="relative">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Flame className="w-4 h-4 text-purple-400" />
+                                <span className="text-xs text-zinc-400 font-medium">{userBName}&apos;s Burn</span>
+                            </div>
+                            <div className="text-2xl font-bold text-white mb-1">
+                                ₹{stats.userBExpense.toLocaleString()}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 h-2 bg-zinc-700 rounded-full overflow-hidden">
+                                    <div 
+                                        className="h-full rounded-full transition-all duration-500"
+                                        style={{ 
+                                            width: `${stats.userBPercent}%`,
+                                            background: "linear-gradient(to right, #a855f7, #6366f1)"
+                                        }}
+                                    />
+                                </div>
+                                <span className="text-xs text-zinc-400">{stats.userBPercent}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Top Spending Categories - Clickable */}
             <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center gap-2 text-zinc-300 mb-6">
                     <PieChart className="w-5 h-5" />
                     <span className="text-lg font-semibold">Top Spending Categories</span>
+                    <span className="text-xs text-zinc-500 ml-auto">Tap for details</span>
                 </div>
 
                 {stats.topCategories.length > 0 ? (
                     <div className="space-y-4">
                         {stats.topCategories.map((cat, index) => (
-                            <div key={cat.category} className="group">
+                            <button
+                                key={cat.category}
+                                onClick={() => setSelectedCategory(cat.category)}
+                                className="w-full group text-left"
+                            >
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className="text-zinc-300 flex items-center gap-2 font-medium">
+                                    <span className="text-zinc-300 flex items-center gap-2 font-medium group-hover:text-white transition-colors">
                                         <span className="text-xl">{getCategoryIcon(cat.category)}</span>
                                         {cat.category}
+                                        <span className="text-xs text-zinc-600 group-hover:text-zinc-400">→</span>
                                     </span>
                                     <div className="text-right">
                                         <div className="text-white font-bold">₹{cat.amount.toLocaleString()}</div>
@@ -172,11 +295,14 @@ export function DashboardCards({
                                 </div>
                                 <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
                                     <div
-                                        className={`h-full bg-gradient-to-r ${getCategoryColor(index)} transition-all duration-500 group-hover:opacity-80`}
-                                        style={{ width: `${cat.percent}%` }}
+                                        className="h-full transition-all duration-500 group-hover:opacity-80"
+                                        style={{ 
+                                            width: `${cat.percent}%`,
+                                            background: getCategoryColorStyle(index)
+                                        }}
                                     />
                                 </div>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 ) : (

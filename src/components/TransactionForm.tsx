@@ -4,10 +4,10 @@ import { addTransaction, transferFunds } from "@/actions/transactions";
 import { Account, TransactionType, UserID } from "@/lib/types";
 import { useUser } from "@/context/UserContext";
 import { useState } from "react";
-import { Loader2, Plus, ArrowRightLeft } from "lucide-react";
+import { Loader2, Plus, ArrowRightLeft, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const CATEGORIES = [
+const EXPENSE_CATEGORIES = [
     { id: "Food", label: "🥣 Food" },
     { id: "Essentials", label: "🛒 Essentials" },
     { id: "Transport", label: "⛽ Transport" },
@@ -15,7 +15,18 @@ const CATEGORIES = [
     { id: "Shopping", label: "🛍️ Shopping" },
     { id: "Fun", label: "🎬 Fun" },
     { id: "Transfer", label: "💸 Transfers" },
-    { id: "Other", label: "📝 Other" }, // Custom category
+    { id: "Other", label: "📝 Other" },
+];
+
+const INCOME_CATEGORIES = [
+    { id: "Salary", label: "💰 Salary" },
+    { id: "Allowance", label: "🎁 Allowance" },
+    { id: "Pocket Money", label: "👛 Pocket Money" },
+    { id: "Freelance", label: "💼 Freelance" },
+    { id: "Investment", label: "📈 Investment" },
+    { id: "Refund", label: "↩️ Refund" },
+    { id: "Borrowed", label: "🤝 Borrowed (Debt)" },
+    { id: "Other", label: "📝 Other" },
 ];
 
 export function TransactionForm({ accounts }: { accounts: Account[] }) {
@@ -24,14 +35,13 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
     const [type, setType] = useState<TransactionType>("expense");
     const [amount, setAmount] = useState("");
     const [category, setCategory] = useState("");
-    const [customCategory, setCustomCategory] = useState(""); // For "Other" category
+    const [customCategory, setCustomCategory] = useState("");
     const [accountId, setAccountId] = useState("");
     const [toAccountId, setToAccountId] = useState("");
     const [description, setDescription] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // Filter accounts based on viewMode (or show all if needed, but usually user selects their own)
-    // If Combined, show all. If A, show A + Shared.
+    // Filter accounts based on viewMode
     const availableAccounts = accounts.filter(
         (a) =>
             a.is_active &&
@@ -40,14 +50,16 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                 a.user_id === "Shared")
     );
 
+    // Get categories based on transaction type
+    const categories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+    const isDebt = category === "Borrowed";
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setLoading(true);
 
         try {
             const userId = viewMode === "Combined" ? "A" : viewMode;
-
-            // Use custom category if "Other" is selected
             const finalCategory = category === "Other" ? customCategory : category;
 
             if (category === "Transfer") {
@@ -66,6 +78,7 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                     account_id: accountId,
                     user_id: userId,
                     description,
+                    is_debt: isDebt,
                 });
             }
             setIsOpen(false);
@@ -110,7 +123,7 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-            <div className="bg-zinc-900 w-full max-w-md rounded-2xl p-6 space-y-6 animate-in slide-in-from-bottom-10">
+            <div className="bg-zinc-900 w-full max-w-md rounded-2xl p-6 space-y-6 animate-in slide-in-from-bottom-10 max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center">
                     <h2 className="text-xl font-bold text-white">New Transaction</h2>
                     <button onClick={() => setIsOpen(false)} className="text-zinc-400 hover:text-white">
@@ -127,7 +140,7 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                                 type="button"
                                 onClick={() => {
                                     setType(t);
-                                    if (category === "Transfer") setCategory(""); // Reset if switching from transfer
+                                    setCategory(""); // Reset category when switching types
                                 }}
                                 className={cn(
                                     "flex-1 py-2 text-sm font-medium rounded-md transition-all capitalize",
@@ -163,7 +176,7 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                     <div>
                         <label className="block text-xs text-zinc-500 mb-2 uppercase">Category</label>
                         <div className="flex flex-wrap gap-2">
-                            {CATEGORIES.map((cat) => (
+                            {categories.map((cat) => (
                                 <button
                                     key={cat.id}
                                     type="button"
@@ -173,9 +186,11 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                                         category === cat.id
                                             ? cat.id === "Transfer"
                                                 ? "bg-blue-600 border-blue-600 text-white"
-                                                : type === "income"
-                                                    ? "bg-green-600 border-green-600 text-white"
-                                                    : "bg-red-600 border-red-600 text-white"
+                                                : cat.id === "Borrowed"
+                                                    ? "bg-amber-600 border-amber-600 text-white"
+                                                    : type === "income"
+                                                        ? "bg-green-600 border-green-600 text-white"
+                                                        : "bg-red-600 border-red-600 text-white"
                                             : "bg-zinc-800 border-zinc-800 text-zinc-300 hover:border-zinc-600"
                                     )}
                                 >
@@ -183,6 +198,19 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                                 </button>
                             ))}
                         </div>
+
+                        {/* Debt Warning */}
+                        {isDebt && (
+                            <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-2">
+                                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                                <div className="text-sm text-amber-200">
+                                    <p className="font-medium">This will be tracked as debt</p>
+                                    <p className="text-amber-300/70 text-xs mt-1">
+                                        You can repay this later from the Analytics page
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Custom Category Input */}
                         {category === "Other" && (
@@ -195,8 +223,7 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                                     "w-full mt-3 bg-zinc-800 text-white p-3 rounded-xl focus:outline-none focus:ring-2",
                                     type === "income" ? "focus:ring-green-500" : "focus:ring-red-500"
                                 )}
-                                placeholder="Enter custom category (e.g., Medical, Education)"
-                                autoFocus
+                                placeholder="Enter custom category"
                             />
                         )}
                     </div>
