@@ -37,4 +37,4 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Transactions: Date support
 
-You can now specify a date when creating a new transaction (income, expense, or transfer). The date picker appears in the "New Transaction" modal — this allows adding backdated or future transactions for correct tracking and reporting.
+You can now specify a date and time when creating a new transaction (income, expense, or transfer). The Date and Time fields appear in the "New Transaction" modal — this allows adding backdated or future transactions with precise timestamps to ensure correct ordering in Recent Activity and reports.

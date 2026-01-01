@@ -72,7 +72,7 @@ export async function addTransaction(data: {
 
         if (data.type === "income") {
             newBalance += data.amount;
-        } else {
+        } else if (data.type === "expense") {
             newBalance -= data.amount;
         }
 

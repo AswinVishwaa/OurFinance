@@ -47,6 +47,13 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
     const [description, setDescription] = useState("");
     // Date for the transaction (yyyy-mm-dd)
     const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+    // Time for the transaction (HH:MM in 24h format)
+    const [time, setTime] = useState(() => {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, "0");
+        const mm = String(now.getMinutes()).padStart(2, "0");
+        return `${hh}:${mm}`;
+    });
     const [loading, setLoading] = useState(false);
 
     // Filter accounts based on viewMode
@@ -70,6 +77,17 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
             const userId = viewMode === "Combined" ? "A" : viewMode;
             const finalCategory = category === "Other" ? customCategory : category;
 
+            // Helper to create ISO from local date + time (prevents timezone shift)
+            const makeISOFromLocal = (d?: string, t?: string) => {
+                if (!d || !t) return undefined;
+                const [y, m, day] = d.split("-").map(Number);
+                const [hh, mm] = t.split(":").map(Number);
+                const localDate = new Date(y, m - 1, day, hh, mm);
+                return localDate.toISOString();
+            };
+
+            const dateIso = makeISOFromLocal(date, time);
+
             if (category === "Transfer") {
                 await transferFunds({
                     from_account_id: accountId,
@@ -77,7 +95,7 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                     amount: Number(amount),
                     user_id: userId,
                     description: description || "Transfer",
-                    date: date ? new Date(date).toISOString() : undefined,
+                    date: dateIso,
                 });
             } else {
                 await addTransaction({
@@ -88,7 +106,7 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                     user_id: userId,
                     description,
                     is_debt: isDebt,
-                    date: date ? new Date(date).toISOString() : undefined,
+                    date: dateIso,
                 });
             }
             setIsOpen(false);
@@ -99,6 +117,10 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
     }
 
     function resetForm() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, "0");
+        const mm = String(now.getMinutes()).padStart(2, "0");
+
         setAmount("");
         setCategory("");
         setCustomCategory("");
@@ -106,6 +128,7 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
         setToAccountId("");
         setDescription("");
         setDate(new Date().toISOString().slice(0, 10));
+        setTime(`${hh}:${mm}`);
         setType("expense");
     }
 
@@ -183,19 +206,34 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                         />
                     </div>
 
-                    {/* Date */}
-                    <div>
-                        <label className="block text-xs text-zinc-500 mb-1 uppercase">Date</label>
-                        <input
-                            required
-                            type="date"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            className={cn(
-                                "w-full bg-zinc-800 text-white p-3 rounded-xl focus:outline-none focus:ring-2",
-                                type === "income" ? "focus:ring-green-500" : "focus:ring-red-500"
-                            )}
-                        />
+                    {/* Date & Time */}
+                    <div className="grid grid-cols-2 gap-2">
+                        <div>
+                            <label className="block text-xs text-zinc-500 mb-1 uppercase">Date</label>
+                            <input
+                                required
+                                type="date"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                className={cn(
+                                    "w-full bg-zinc-800 text-white p-3 rounded-xl focus:outline-none focus:ring-2",
+                                    type === "income" ? "focus:ring-green-500" : "focus:ring-red-500"
+                                )}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-500 mb-1 uppercase">Time</label>
+                            <input
+                                required
+                                type="time"
+                                value={time}
+                                onChange={(e) => setTime(e.target.value)}
+                                className={cn(
+                                    "w-full bg-zinc-800 text-white p-3 rounded-xl focus:outline-none focus:ring-2",
+                                    type === "income" ? "focus:ring-green-500" : "focus:ring-red-500"
+                                )}
+                            />
+                        </div>
                     </div>
 
                     {/* Categories (Pills) */}
