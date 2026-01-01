@@ -199,22 +199,12 @@ export function DashboardCards({
                                 {timePeriod === "all" ? "All Time" : timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)} Summary
                             </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 items-center mb-2">
-                            <div>
-                                <div className={`text-4xl font-bold ${stats.savings >= 0 ? "text-green-400" : "text-red-400"}`}>
-                                    {stats.savings >= 0 ? "+" : ""}₹{stats.savings.toLocaleString()}
-                                </div>
-                                <div className="text-xs text-zinc-500">Net savings</div>
-                            </div>
-
-                            <div className="text-right">
-                                <div className="text-3xl font-bold text-red-400">₹{stats.totalExpense.toLocaleString()}</div>
-                                <div className="text-xs text-zinc-500">Total Spent</div>
-                            </div>
+                        <div className={`text-5xl font-bold mb-2 ${stats.savings >= 0 ? "text-green-400" : "text-red-400"}`}>
+                            {stats.savings >= 0 ? "+" : ""}₹{stats.savings.toLocaleString()}
                         </div>
-
                         <div className="flex items-center gap-4 text-sm">
                             <span className="text-green-400">↑ ₹{stats.totalIncome.toLocaleString()}</span>
+                            <span className="text-red-400">↓ ₹{stats.totalExpense.toLocaleString()}</span>
                             <span className="text-zinc-500">• {stats.savingsRate}% saved</span>
                         </div>
                     </div>
