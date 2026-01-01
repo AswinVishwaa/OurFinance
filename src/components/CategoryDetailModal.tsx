@@ -43,7 +43,14 @@ export function CategoryDetailModal({
             Shopping: "🛍️",
             Fun: "🎬",
             Transfer: "💸",
+            Recharges: "🔌",
+            Snacks: "🍿",
+            Health: "💊",
+            Education: "🎓",
+            Bonus: "🎉",
+            Interest: "💸",
         };
+        if (cat === "All Categories" || cat === "All") return "📊";
         return icons[cat] || "📄";
     };
 
@@ -53,15 +60,15 @@ export function CategoryDetailModal({
     );
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/70 backdrop-blur-sm z-50"
                 onClick={onClose}
             />
 
             {/* Modal */}
-            <div className="relative w-full sm:w-[480px] max-h-[85vh] bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 border border-zinc-700/50 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
+            <div className="relative z-[80] w-full sm:w-[480px] max-h-[85vh] bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 border border-zinc-700/50 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
                 {/* Header */}
                 <div className="sticky top-0 bg-zinc-900/95 backdrop-blur-sm border-b border-zinc-700/50 p-4 flex items-center justify-between z-10">
                     <div className="flex items-center gap-3">
@@ -92,7 +99,7 @@ export function CategoryDetailModal({
                 </div>
 
                 {/* Transactions List */}
-                <div className="overflow-y-auto max-h-[50vh] p-4 space-y-3">
+                <div className="overflow-y-auto max-h-[50vh] p-4 pb-24 space-y-3">
                     {sortedTransactions.length > 0 ? (
                         sortedTransactions.map((t) => (
                             <div
