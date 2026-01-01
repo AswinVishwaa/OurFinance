@@ -14,6 +14,10 @@ const EXPENSE_CATEGORIES = [
     { id: "Utilities", label: "📱 Utilities" },
     { id: "Shopping", label: "🛍️ Shopping" },
     { id: "Fun", label: "🎬 Fun" },
+    { id: "Recharges", label: "🔌 Recharges" },
+    { id: "Snacks", label: "🍿 Snacks" },
+    { id: "Health", label: "💊 Health" },
+    { id: "Education", label: "🎓 Education" },
     { id: "Transfer", label: "💸 Transfers" },
     { id: "Other", label: "📝 Other" },
 ];
@@ -24,6 +28,8 @@ const INCOME_CATEGORIES = [
     { id: "Pocket Money", label: "👛 Pocket Money" },
     { id: "Freelance", label: "💼 Freelance" },
     { id: "Investment", label: "📈 Investment" },
+    { id: "Bonus", label: "🎉 Bonus" },
+    { id: "Interest", label: "💸 Interest" },
     { id: "Refund", label: "↩️ Refund" },
     { id: "Borrowed", label: "🤝 Borrowed (Debt)" },
     { id: "Other", label: "📝 Other" },
@@ -39,6 +45,8 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
     const [accountId, setAccountId] = useState("");
     const [toAccountId, setToAccountId] = useState("");
     const [description, setDescription] = useState("");
+    // Date for the transaction (yyyy-mm-dd)
+    const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
     const [loading, setLoading] = useState(false);
 
     // Filter accounts based on viewMode
@@ -69,6 +77,7 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                     amount: Number(amount),
                     user_id: userId,
                     description: description || "Transfer",
+                    date: date ? new Date(date).toISOString() : undefined,
                 });
             } else {
                 await addTransaction({
@@ -79,6 +88,7 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                     user_id: userId,
                     description,
                     is_debt: isDebt,
+                    date: date ? new Date(date).toISOString() : undefined,
                 });
             }
             setIsOpen(false);
@@ -95,6 +105,7 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
         setAccountId("");
         setToAccountId("");
         setDescription("");
+        setDate(new Date().toISOString().slice(0, 10));
         setType("expense");
     }
 
@@ -169,6 +180,21 @@ export function TransactionForm({ accounts }: { accounts: Account[] }) {
                             className="w-full bg-transparent text-4xl font-bold text-white placeholder-zinc-700 focus:outline-none"
                             placeholder="0"
                             autoFocus
+                        />
+                    </div>
+
+                    {/* Date */}
+                    <div>
+                        <label className="block text-xs text-zinc-500 mb-1 uppercase">Date</label>
+                        <input
+                            required
+                            type="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className={cn(
+                                "w-full bg-zinc-800 text-white p-3 rounded-xl focus:outline-none focus:ring-2",
+                                type === "income" ? "focus:ring-green-500" : "focus:ring-red-500"
+                            )}
                         />
                     </div>
 

@@ -110,10 +110,11 @@ export async function transferFunds(data: {
     amount: number;
     user_id: UserID;
     description: string;
+    date?: string;
 }) {
     const transaction: Transaction = {
         id: uuidv4(),
-        date: new Date().toISOString(),
+        date: data.date || new Date().toISOString(),
         type: "transfer",
         amount: data.amount,
         category: "Transfer",

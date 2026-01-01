@@ -122,6 +122,12 @@ export function DashboardCards({
             Shopping: "🛍️",
             Fun: "🎬",
             Transfer: "💸",
+            Recharges: "🔌",
+            Snacks: "🍿",
+            Health: "💊",
+            Education: "🎓",
+            Bonus: "🎉",
+            Interest: "💸",
         };
         return icons[category] || "📄";
     };
@@ -149,9 +155,11 @@ export function DashboardCards({
     };
 
     // Get selected category data
-    const selectedCategoryData = selectedCategory
-        ? stats.topCategories.find((c) => c.category === selectedCategory)
-        : null;
+    const selectedCategoryData = selectedCategory === 'ALL'
+        ? { category: 'All Categories', transactions: filteredTransactions.filter(t => t.type === 'expense'), amount: stats.totalExpense }
+        : selectedCategory
+            ? stats.topCategories.find((c) => c.category === selectedCategory) || null
+            : null;
 
     return (
         <div className="space-y-6">
@@ -159,7 +167,7 @@ export function DashboardCards({
             <CategoryDetailModal
                 isOpen={!!selectedCategory}
                 onClose={() => setSelectedCategory(null)}
-                category={selectedCategory || ""}
+                category={selectedCategory === 'ALL' ? 'All Categories' : (selectedCategory || "")}
                 transactions={selectedCategoryData?.transactions || []}
                 totalAmount={selectedCategoryData?.amount || 0}
             />
@@ -191,12 +199,22 @@ export function DashboardCards({
                                 {timePeriod === "all" ? "All Time" : timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)} Summary
                             </span>
                         </div>
-                        <div className={`text-5xl font-bold mb-2 ${stats.savings >= 0 ? "text-green-400" : "text-red-400"}`}>
-                            {stats.savings >= 0 ? "+" : ""}₹{stats.savings.toLocaleString()}
+                        <div className="grid grid-cols-2 gap-4 items-center mb-2">
+                            <div>
+                                <div className={`text-4xl font-bold ${stats.savings >= 0 ? "text-green-400" : "text-red-400"}`}>
+                                    {stats.savings >= 0 ? "+" : ""}₹{stats.savings.toLocaleString()}
+                                </div>
+                                <div className="text-xs text-zinc-500">Net savings</div>
+                            </div>
+
+                            <div className="text-right">
+                                <div className="text-3xl font-bold text-red-400">₹{stats.totalExpense.toLocaleString()}</div>
+                                <div className="text-xs text-zinc-500">Total Spent</div>
+                            </div>
                         </div>
+
                         <div className="flex items-center gap-4 text-sm">
                             <span className="text-green-400">↑ ₹{stats.totalIncome.toLocaleString()}</span>
-                            <span className="text-red-400">↓ ₹{stats.totalExpense.toLocaleString()}</span>
                             <span className="text-zinc-500">• {stats.savingsRate}% saved</span>
                         </div>
                     </div>
@@ -268,7 +286,11 @@ export function DashboardCards({
 
             {/* Top Spending Categories - Clickable */}
             <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-6 shadow-xl">
-                <div className="flex items-center gap-2 text-zinc-300 mb-6">
+                <div
+                    role="button"
+                    onClick={() => setSelectedCategory(prev => prev === 'ALL' ? null : 'ALL')}
+                    className="flex items-center gap-2 text-zinc-300 mb-6 cursor-pointer select-none hover:opacity-90"
+                >
                     <PieChart className="w-5 h-5" />
                     <span className="text-lg font-semibold">Top Spending Categories</span>
                     <span className="text-xs text-zinc-500 ml-auto">Tap for details</span>
