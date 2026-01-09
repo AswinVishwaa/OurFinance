@@ -4,6 +4,7 @@ import { readSheet, appendRow, updateRow, findRowIndex, SHEET_IDS } from "@/lib/
 import { Asset, UserID } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
+import { getAccounts } from "./accounts";
 
 export async function getAssets() {
     const assets = await readSheet<Asset>(SHEET_IDS.ASSETS);
@@ -37,6 +38,7 @@ export async function addAsset(data: {
     total_cash_paid: number;
     grams: number;
     user_id: UserID;
+    paid_from_account_id?: string;
 }) {
     // Tax Logic: 3% Tax
     const tax_deducted = data.total_cash_paid * 0.03;
@@ -95,6 +97,28 @@ export async function addAsset(data: {
         await appendRow(SHEET_IDS.ASSETS, row);
     }
 
+    // Deduct the cash paid from the specified account (if provided) or the user's first available account
+    try {
+        const accounts = await getAccounts();
+        let acctIndex = -1;
+        if (data.paid_from_account_id) {
+            acctIndex = accounts.findIndex(a => a.id === data.paid_from_account_id);
+        }
+        if (acctIndex === -1) {
+            acctIndex = accounts.findIndex(a => a.is_active && (a.user_id === data.user_id || a.user_id === "Shared"));
+        }
+        if (acctIndex !== -1) {
+            const acct = accounts[acctIndex];
+            const newBalance = acct.current_balance - data.total_cash_paid;
+            const sheetRow = acctIndex + 2;
+            await updateRow(SHEET_IDS.ACCOUNTS, `D${sheetRow}`, [newBalance]);
+            revalidatePath("/profile");
+            revalidatePath("/");
+        }
+    } catch (err) {
+        console.error('[addAsset] Failed to deduct from account', err);
+    }
+
     revalidatePath("/");
     revalidatePath("/assets");
 }
@@ -104,6 +128,7 @@ export async function addExistingAsset(data: {
     invested_value: number;
     grams: number;
     user_id: UserID;
+    paid_from_account_id?: string;
 }) {
     // Check if user already has a card for this metal type
     const existing = await findExistingAsset(data.user_id, data.metal_type);
@@ -156,6 +181,28 @@ export async function addExistingAsset(data: {
         ];
 
         await appendRow(SHEET_IDS.ASSETS, row);
+    }
+
+    // Deduct the invested value from the specified account (if provided) or the user's first available account
+    try {
+        const accounts = await getAccounts();
+        let acctIndex = -1;
+        if (data.paid_from_account_id) {
+            acctIndex = accounts.findIndex(a => a.id === data.paid_from_account_id);
+        }
+        if (acctIndex === -1) {
+            acctIndex = accounts.findIndex(a => a.is_active && (a.user_id === data.user_id || a.user_id === "Shared"));
+        }
+        if (acctIndex !== -1) {
+            const acct = accounts[acctIndex];
+            const newBalance = acct.current_balance - data.invested_value;
+            const sheetRow = acctIndex + 2;
+            await updateRow(SHEET_IDS.ACCOUNTS, `D${sheetRow}`, [newBalance]);
+            revalidatePath("/profile");
+            revalidatePath("/");
+        }
+    } catch (err) {
+        console.error('[addExistingAsset] Failed to deduct from account', err);
     }
 
     revalidatePath("/");

@@ -1,4 +1,5 @@
 import { getAssets } from "@/actions/assets";
+import { getAccounts } from "@/actions/accounts";
 import { getSettings } from "@/actions/settings";
 import { BottomNav } from "@/components/BottomNav";
 import { AddAssetForm } from "./_components/AddAssetForm";
@@ -10,6 +11,8 @@ export default async function AssetsPage() {
 
     const userAName = settings.find((s) => s.key === "user_a_name")?.value || "User A";
     const userBName = settings.find((s) => s.key === "user_b_name")?.value || "User B";
+
+    const accounts = await getAccounts();
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-black pb-24 text-zinc-100 font-sans">
@@ -27,7 +30,7 @@ export default async function AssetsPage() {
                     </div>
 
                     <AssetList assets={assets} userAName={userAName} userBName={userBName} />
-                    <AddAssetForm userAName={userAName} userBName={userBName} />
+                    <AddAssetForm accounts={accounts} userAName={userAName} userBName={userBName} />
                 </section>
             </div>
 
