@@ -1,11 +1,11 @@
 "use client";
 
 import { addAsset, addExistingAsset } from "@/actions/assets";
-import { UserID } from "@/lib/types";
-import { useState } from "react";
+import { UserID, Account } from "@/lib/types";
+import { useState, useEffect } from "react";
 import { Loader2, Plus } from "lucide-react";
 
-export function AddAssetForm({ userAName, userBName }: { userAName: string; userBName: string }) {
+export function AddAssetForm({ accounts, userAName, userBName }: { accounts: Account[]; userAName: string; userBName: string }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isExisting, setIsExisting] = useState(false);
     const [metalType, setMetalType] = useState<"Gold" | "Silver">("Gold");
@@ -13,7 +13,14 @@ export function AddAssetForm({ userAName, userBName }: { userAName: string; user
     const [investedValue, setInvestedValue] = useState("");
     const [grams, setGrams] = useState("");
     const [owner, setOwner] = useState<UserID>("A");
+    const [paidFromAccount, setPaidFromAccount] = useState<string>("");
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        // choose default account for owner
+        const avail = accounts.find(a => a.is_active && (a.user_id === owner || a.user_id === "Shared"));
+        setPaidFromAccount(avail ? avail.id : "");
+    }, [owner, accounts]);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -26,6 +33,7 @@ export function AddAssetForm({ userAName, userBName }: { userAName: string; user
                     invested_value: Number(investedValue),
                     grams: Number(grams),
                     user_id: owner,
+                    paid_from_account_id: paidFromAccount || undefined,
                 });
             } else {
                 // Add new asset - with tax calculation
@@ -34,6 +42,7 @@ export function AddAssetForm({ userAName, userBName }: { userAName: string; user
                     total_cash_paid: Number(cashPaid),
                     grams: Number(grams),
                     user_id: owner,
+                    paid_from_account_id: paidFromAccount || undefined,
                 });
             }
             setIsOpen(false);
@@ -92,6 +101,20 @@ export function AddAssetForm({ userAName, userBName }: { userAName: string; user
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">
+                <div>
+                    <label className="block text-xs text-zinc-500 mb-1">Paid From</label>
+                    <select
+                        required
+                        value={paidFromAccount}
+                        onChange={(e) => setPaidFromAccount(e.target.value)}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                        <option value="">Select account</option>
+                        {accounts.filter(a => a.is_active && (a.user_id === owner || a.user_id === 'Shared')).map(a => (
+                            <option key={a.id} value={a.id}>{a.name} : ₹{a.current_balance.toLocaleString()}</option>
+                        ))}
+                    </select>
+                </div>
                 <div>
                     <label className="block text-xs text-zinc-500 mb-1">Metal Type</label>
                     <div className="flex gap-2">

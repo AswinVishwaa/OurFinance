@@ -1,6 +1,6 @@
 "use client";
 
-import { Account, Transaction, DebtSummary } from "@/lib/types";
+import { Account, Transaction, DebtSummary, Asset } from "@/lib/types";
 import { useUser } from "@/context/UserContext";
 import { useMemo, useState } from "react";
 import { 
@@ -12,7 +12,8 @@ import {
     ArrowDownRight,
     HandCoins,
     CheckCircle2,
-    ChevronDown
+    ChevronDown,
+    Sparkles
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths, differenceInDays, startOfDay } from "date-fns";
 import { DebtRepayModal } from "./DebtRepayModal";
@@ -20,17 +21,60 @@ import { DebtRepayModal } from "./DebtRepayModal";
 interface AnalyticsViewProps {
     accounts: Account[];
     transactions: Transaction[];
+    assets: Asset[];
     userAName: string;
     userBName: string;
 }
 
 type TimePeriod = "month" | "quarter" | "year";
 
-export function AnalyticsView({ accounts, transactions, userAName, userBName }: AnalyticsViewProps) {
+export function AnalyticsView({ accounts, transactions, assets, userAName, userBName }: AnalyticsViewProps) {
     const { viewMode } = useUser();
+    // State to toggle expanded card view
+    const [assetExpanded, setAssetExpanded] = useState(false);
+    const [isAssetAnimating, setIsAssetAnimating] = useState(false);
     const [timePeriod, setTimePeriod] = useState<TimePeriod>("month");
     const [showPeriodMenu, setShowPeriodMenu] = useState(false);
     const [selectedDebt, setSelectedDebt] = useState<DebtSummary | null>(null);
+
+    // Compute asset totals for the selected view
+    const assetsForView = useMemo(() => {
+        return assets.filter(a => viewMode === "Combined" || a.user_id === viewMode);
+    }, [assets, viewMode]);
+
+    const assetStats = useMemo(() => {
+        const goldInvested = assetsForView
+            .filter(a => a.metal_type === "Gold")
+            .reduce((sum, a) => sum + (a.invested_value || 0), 0);
+
+        const silverInvested = assetsForView
+            .filter(a => a.metal_type === "Silver")
+            .reduce((sum, a) => sum + (a.invested_value || 0), 0);
+
+        const taxGold = assetsForView
+            .filter(a => a.metal_type === "Gold")
+            .reduce((sum, a) => sum + (a.tax_deducted || 0), 0);
+
+        const taxSilver = assetsForView
+            .filter(a => a.metal_type === "Silver")
+            .reduce((sum, a) => sum + (a.tax_deducted || 0), 0);
+
+        const totalInvested = goldInvested + silverInvested;
+        const totalTax = taxGold + taxSilver;
+
+        const goldRatio = totalInvested > 0 ? goldInvested / totalInvested : 0.5;
+
+        return { goldInvested, silverInvested, taxGold, taxSilver, totalInvested, totalTax, goldRatio };
+    }, [assetsForView]);
+
+    // UI helpers for donut and theme accents
+    const goldPct = Math.round((assetStats.goldRatio || 0.5) * 100);
+    const goldColor = "#f59e0b";
+    const silverColor = "#9ca3af";
+    const goldAccentGradient = `linear-gradient(90deg, #fcd34d, #f59e0b, #d97706)`;
+    const silverAccentGradient = `linear-gradient(90deg, #f3f4f6, #d1d5db, #9ca3af)`;
+    const themeAccent = viewMode === "A" ? ["#ef4444", "#ec4899"] : viewMode === "B" ? ["#a855f7", "#6366f1"] : ["#10b981", "#14b8a6"];
+    const cardShadow = (isAssetAnimating || assetExpanded) ? `0 10px 30px ${themeAccent[0]}22, 0 2px 6px ${themeAccent[1]}11` : undefined;
 
     // Filter transactions by user
     const userTransactions = useMemo(() => {
@@ -38,6 +82,12 @@ export function AnalyticsView({ accounts, transactions, userAName, userBName }: 
             viewMode === "Combined" || t.user_id === viewMode
         );
     }, [transactions, viewMode]);
+
+    // Precompute some SVG values for the donut visualization
+    const radius = 36;
+    const circumference = 2 * Math.PI * radius;
+    const goldLength = circumference * assetStats.goldRatio;
+    const silverLength = Math.max(0, circumference - goldLength);
 
     // Calculate stats
     const stats = useMemo(() => {
@@ -168,10 +218,104 @@ export function AnalyticsView({ accounts, transactions, userAName, userBName }: 
                     onClose={() => setSelectedDebt(null)}
                 />
             )}
+            {/* Assets Summary Card */}
+            <div
+                role="button"
+                onClick={() => {
+                    setIsAssetAnimating(true);
+                    setTimeout(() => setIsAssetAnimating(false), 600);
+                    setAssetExpanded(!assetExpanded);
+                }}
+                className="relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-4 shadow-xl cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group"
+            >
+                {/* Sparkle animation on toggle */}
+                {isAssetAnimating && (
+                    <>
+                        <Sparkles className="absolute top-2 left-3 w-4 h-4 text-amber-400 animate-ping" />
+                        <Sparkles className="absolute bottom-2 right-3 w-3 h-3 text-zinc-400 animate-ping" style={{ animationDelay: '150ms' }} />
+                        <Sparkles className="absolute top-3 right-6 w-3 h-3 text-amber-300 animate-ping" style={{ animationDelay: '300ms' }} />
+                    </>
+                )}
+
+                {/* Shine effect on hover */}
+                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+
+                {/* When not expanded show donut + summary; when expanded show only sub-details */}
+                {!assetExpanded ? (
+                    <div className="flex flex-col md:flex-row items-center gap-4 relative">
+                        <div className="flex items-center justify-center w-full md:w-40 transition-all duration-300">
+                            <div
+                                style={{
+                                    width: 88,
+                                    height: 88,
+                                    padding: 8,
+                                    borderRadius: 9999,
+                                    background: `conic-gradient(${goldColor} 0% ${goldPct}%, ${silverColor} ${goldPct}% 100%)`,
+                                    boxShadow: (isAssetAnimating || assetExpanded) ? `0 8px 28px ${themeAccent[0]}22` : undefined,
+                                }}
+                                className="rounded-full flex items-center justify-center drop-shadow-lg"
+                            >
+                                <div className="w-full h-full rounded-full flex items-center justify-center" style={{ background: 'rgba(10,10,10,0.8)' }}>
+                                    <div className="text-sm font-semibold text-white">₹{assetStats.totalInvested.toLocaleString()}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 w-full">
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-zinc-400 font-medium">Assets Invested</div>
+                                <div className="text-xs text-zinc-500">{viewMode === 'Combined' ? 'Combined' : `${viewMode === 'A' ? userAName : userBName}`}</div>
+                            </div>
+
+                            <div className="mt-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-3 h-3 rounded-full" style={{ background: 'linear-gradient(90deg,#f6c24a,#f59e0b)' }} />
+                                        <span className="text-sm text-zinc-200">Gold</span>
+                                    </div>
+                                    <div className="text-sm font-bold">₹{assetStats.goldInvested.toLocaleString()}</div>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-3 h-3 rounded-full" style={{ background: 'linear-gradient(90deg,#e6edf3,#9ca3af)' }} />
+                                        <span className="text-sm text-zinc-200">Silver</span>
+                                    </div>
+                                    <div className="text-sm font-bold">₹{assetStats.silverInvested.toLocaleString()}</div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
+                                    <div className="text-xs text-zinc-400">Tax</div>
+                                    <div className="text-sm font-medium text-zinc-300">₹{assetStats.totalTax.toLocaleString()}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="w-full">
+                        <div className="text-sm text-zinc-400 font-medium">Assets Details</div>
+                        <div className="mt-4 bg-zinc-900/30 p-3 rounded-lg transition-all duration-300">
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="text-xs text-zinc-400">Gold Invested</div>
+                                <div className="text-sm font-medium text-right">₹{assetStats.goldInvested.toLocaleString()}</div>
+
+                                <div className="text-xs text-zinc-400">Gold Tax</div>
+                                <div className="text-sm font-medium text-right">₹{assetStats.taxGold.toLocaleString()}</div>
+
+                                <div className="text-xs text-zinc-400">Silver Invested</div>
+                                <div className="text-sm font-medium text-right">₹{assetStats.silverInvested.toLocaleString()}</div>
+
+                                <div className="text-xs text-zinc-400">Silver Tax</div>
+                                <div className="text-sm font-medium text-right">₹{assetStats.taxSilver.toLocaleString()}</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {/* Month Summary Card */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 border border-zinc-700/50 rounded-2xl p-6 shadow-2xl">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
+            <div className="relative overflow-hidden bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-900 border border-zinc-700/50 rounded-2xl p-6 shadow-2xl">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
                 <div className="relative">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2 text-zinc-400">
@@ -226,7 +370,7 @@ export function AnalyticsView({ accounts, transactions, userAName, userBName }: 
             {/* Daily Average & Projection */}
             <div className="grid grid-cols-2 gap-4">
                 {/* Daily Average */}
-                <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-4 shadow-xl">
+                <div className="bg-linear-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-4 shadow-xl">
                     <div className="flex items-center gap-2 mb-3">
                         <Flame className="w-4 h-4 text-orange-400" />
                         <span className="text-xs text-zinc-400 font-medium">Daily Avg Spend</span>
@@ -240,7 +384,7 @@ export function AnalyticsView({ accounts, transactions, userAName, userBName }: 
                 </div>
 
                 {/* Month Projection */}
-                <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-4 shadow-xl">
+                <div className="bg-linear-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-4 shadow-xl">
                     <div className="flex items-center gap-2 mb-3">
                         <TrendingUp className="w-4 h-4 text-blue-400" />
                         <span className="text-xs text-zinc-400 font-medium">Projected Total</span>
@@ -257,7 +401,7 @@ export function AnalyticsView({ accounts, transactions, userAName, userBName }: 
             {/* User Burn Rate (Combined view only) */}
             {viewMode === "Combined" && (
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-4 shadow-xl">
+                    <div className="relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-4 shadow-xl">
                         <div 
                             className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-30"
                             style={{ background: "linear-gradient(to bottom right, #ef4444, #ec4899)" }}
@@ -273,7 +417,7 @@ export function AnalyticsView({ accounts, transactions, userAName, userBName }: 
                         </div>
                     </div>
 
-                    <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-4 shadow-xl">
+                    <div className="relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-4 shadow-xl">
                         <div 
                             className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-30"
                             style={{ background: "linear-gradient(to bottom right, #a855f7, #6366f1)" }}
@@ -292,7 +436,7 @@ export function AnalyticsView({ accounts, transactions, userAName, userBName }: 
             )}
 
             {/* Month over Month Comparison */}
-            <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-6 shadow-xl">
+            <div className="bg-linear-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center gap-2 text-zinc-300 mb-4">
                     <TrendingUp className="w-5 h-5" />
                     <span className="text-lg font-semibold">Month Comparison</span>
@@ -358,7 +502,7 @@ export function AnalyticsView({ accounts, transactions, userAName, userBName }: 
             </div>
 
             {/* Debt Tracker */}
-            <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-6 shadow-xl">
+            <div className="bg-linear-to-br from-zinc-900 to-zinc-800 border border-zinc-700/50 rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2 text-zinc-300">
                         <HandCoins className="w-5 h-5 text-amber-400" />
